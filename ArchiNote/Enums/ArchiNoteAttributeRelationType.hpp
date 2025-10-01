@@ -1,0 +1,30 @@
+
+#ifndef __ARCHINOTEATTRIBUTERELATIONTYPE_HPP__
+#define __ARCHINOTEATTRIBUTERELATIONTYPE_HPP__
+
+
+
+
+enum class ArchiNoteAttributeRelationType {
+    SOLVES,
+    MEASURES,
+    TARGETS,
+    TRIGGERS,
+    VALIDATES
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#endif // __ARCHINOTEATTRIBUTERELATIONTYPE_HPP

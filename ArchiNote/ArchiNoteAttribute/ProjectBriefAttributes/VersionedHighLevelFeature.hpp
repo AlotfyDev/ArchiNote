@@ -1,0 +1,134 @@
+#ifndef __VERSIONEDHIGHLEVELFEATURE_HPP__
+#define __VERSIONEDHIGHLEVELFEATURE_HPP__
+
+
+
+
+
+
+
+#include "../../Enums/ArchiNoteAttributeRelationType.hpp"
+#include "../../Structs/AttributeMetaData.hpp"
+
+
+
+#include "../../Structs/ExportEvent.hpp"
+#include "../../Structs/UpdateEvent.hpp"
+#include "../../Structs/ValidationEvent.hpp"
+#include "../../Structs/ProjectBriefContent/HighLevelFeatureContent.hpp"
+
+
+
+// ArchiNoteAttributeRelationType
+
+
+
+
+
+// Concrete class for VersionedHighLevelFeatures (1.5 - Single instance)
+class VersionedHighLevelFeature {
+private:
+    AttributeMetadata metadata;  // Composed metadata (has-a)
+    HighLevelFeatureContent content;  // Concrete content (stack-allocated, no pointer)
+
+public:
+    // Constructor: Use static factory for content
+    VersionedHighLevelFeature(const std::string& objId, const std::string& feature, const std::string& description, int priority) 
+        : metadata(objId, ArchiNoteAttributeType::HIGH_LEVEL_FEATURES),
+          content(HighLevelFeatureContent::CreateHighLevelFeaturesContent(feature, description, priority)) {
+        metadata.history.push_back(new HighLevelFeatureContent(content));  // Clone for history
+    }
+
+    // Destructor: Manual cleanup for history in metadata
+    ~VersionedHighLevelFeature() {
+        for (void* ptr : metadata.history) {
+            delete static_cast<HighLevelFeatureContent*>(ptr);  // Manual delete
+        }
+        metadata.history.clear();
+    }
+
+    // No copy (to avoid double-delete)
+    VersionedHighLevelFeature(const VersionedHighLevelFeature&) = delete;
+    VersionedHighLevelFeature& operator=(const VersionedHighLevelFeature&) = delete;
+
+    // Move constructor/assignment
+    VersionedHighLevelFeature(VersionedHighLevelFeature&& other) noexcept 
+        : metadata(std::move(other.metadata)), content(std::move(other.content)) {}
+
+    VersionedHighLevelFeature& operator=(VersionedHighLevelFeature&& other) noexcept {
+        if (this != &other) {
+            for (void* ptr : metadata.history) {
+                delete static_cast<HighLevelFeatureContent*>(ptr);
+            }
+            metadata.history.clear();
+            metadata = std::move(other.metadata);
+            content = std::move(other.content);
+        }
+        return *this;
+    }
+
+    // Getters for metadata
+    std::string getID() const { return metadata.id; }
+    ArchiNoteAttributeType getType() const { return metadata.type; }
+    const std::vector<ArchiNoteAttributeRelationType>& getRelations() const { return metadata.relations; }
+
+    // Content-specific methods
+    void updateContent(const std::string& newFeature, const std::string& newDescription, int newPriority) {
+        // Save old content to history
+        metadata.history.push_back(new HighLevelFeatureContent(content));  // Deep copy
+        std::time_t now = std::time(nullptr);
+        metadata.changeLog[now] = "Updated high-level features content";
+
+        // Update content (direct assignment via factory)
+        content = HighLevelFeatureContent::CreateHighLevelFeaturesContent(newFeature, newDescription, newPriority);
+
+        // Update metadata timestamp
+        metadata.timestamp = now;
+    }
+
+    bool isValid() const {
+        bool valid = content.isContentValid();
+        // Fire validation event if needed
+        return valid;
+    }
+
+    std::string toFullJSON() const {
+        // Metadata JSON
+        std::string json = "{ \"metadata\": { \"id\": \"" + metadata.id + "\", \"type\": " + std::to_string(static_cast<int>(metadata.type)) + 
+                           ", \"timestamp\": " + std::to_string(metadata.timestamp) + " }, ";
+        // Content JSON
+        json += "\"content\": " + content.toJSON() + " }";
+        return json;
+    }
+
+    // Get history (cast back to HighLevelFeaturesContent)
+    std::vector<HighLevelFeatureContent*> getHistory() const {
+        std::vector<HighLevelFeatureContent*> result;
+        for (void* ptr : metadata.history) {
+            result.push_back(static_cast<HighLevelFeatureContent*>(ptr));
+        }
+        return result;
+    }
+
+    // Compute diff
+    std::string computeDiff(std::time_t fromTimestamp, std::time_t toTimestamp) const {
+        std::string diff = "Diff for " + getID() + ":\n";
+        auto it = metadata.changeLog.find(fromTimestamp);
+        if (it != metadata.changeLog.end()) {
+            diff += "- Change: " + it->second + "\n";
+        }
+        // Content diff (simplified)
+        diff += "- Content updated\n";
+        return diff;
+    }
+};
+
+
+
+
+
+
+
+
+
+#endif // __VERSIONEDHIGHLEVELFEATURE_HPP

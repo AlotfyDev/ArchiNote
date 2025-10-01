@@ -1,0 +1,36 @@
+
+#ifndef __ARCHINOTEATTRIBUTETYPE_HPP__
+#define __ARCHINOTEATTRIBUTETYPE_HPP__
+
+
+
+// Enums for types (as discussed)
+enum class ArchiNoteAttributeType {
+    GLOBAL_META,
+    OVERVIEW,
+    KEY_OBJECTIVES,
+    TARGET_AUDIENCE,
+    PAIN_POINTS,
+    HIGH_LEVEL_FEATURES,
+    ASSUMPTIONS,
+    SUCCESS_METRICS,
+    INITIAL_RISKS,
+    REVIEW_CHECKLIST,
+    CONSTRAINTS
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#endif // __ARCHINOTEATTRIBUTETYPE_HPP__
