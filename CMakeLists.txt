@@ -28,6 +28,7 @@ add_compile_options(
 
 # Find packages (optional dependencies)
 find_package(HDF5 QUIET)
+find_package(KGraph QUIET)
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -51,47 +52,17 @@ set(ARCHINOTE_SOURCES
     ArchiNote/Structs/ValidationEvent.hpp
 )
 
-# Supporting types
-set(SUPPORTING_SOURCES
-    SupportingTypes/EAttributeContentType.hpp
-    SupportingTypes/EAttributeType.hpp
-    SupportingTypes/EKGNodeType.hpp
-    SupportingTypes/EKGPathType.hpp
-    SupportingTypes/EKGRelation.hpp
-    SupportingTypes/KGBaseNode.cpp
-    SupportingTypes/KGBaseNode.hpp
-    SupportingTypes/KGEdge.cpp
-    SupportingTypes/KGEdge.hpp
-    SupportingTypes/KGPath.cpp
-    SupportingTypes/KGPath.hpp
-    SupportingTypes/KGStructuredAttribute.cpp
-    SupportingTypes/KGStructuredAttribute.hpp
-    SupportingTypes/NodePipelineManager.cpp
-    SupportingTypes/NodePipelineManager.hpp
-)
-
-# KGraph sources
-set(KGRAPH_SOURCES
-    KGraph/KGraph.cpp
-    KGraph/KGraph.hpp
-)
-
-# Create library targets
-add_library(SupportingTypes STATIC ${SUPPORTING_SOURCES})
-add_library(KGraph STATIC ${KGRAPH_SOURCES})
+# Create ArchiNote interface library
 add_library(ArchiNote INTERFACE)
 
 # Link dependencies
-target_link_libraries(KGraph
-    PUBLIC
-        SupportingTypes
-)
-
-target_link_libraries(ArchiNote
-    INTERFACE
-        KGraph
-        SupportingTypes
-)
+if(KGraph_FOUND)
+    target_link_libraries(ArchiNote INTERFACE KGraph)
+    target_compile_definitions(ArchiNote INTERFACE -DHAS_KGRAPH)
+else()
+    # Fallback: show warning but don't fail
+    message(WARNING "KGraph not found. ArchiNote will be built without KGraph integration.")
+endif()
 
 # Optional HDF5 support
 if(HDF5_FOUND)

@@ -25,25 +25,36 @@ ArchiNote is a sophisticated C++ system designed to simulate the semantic struct
 ┌─────────────────────────────────────────────────────────────────┐
 │                        ArchiNote System                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │   ArchiNote  │  │   KGraph    │  │ Supporting  │              │
-│  │   Manager   │  │             │  │   Types     │              │
-│  └─────────────┘  └─────────────┘  └─────────────┘              │
+│  ┌─────────────┐                                               │
+│  │   ArchiNote  │                                               │
+│  │   Manager   │                                               │
+│  └─────────────┘                                               │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
 │  │   Storage   │  │ Repository  │  │  Attributes │              │
 │  │  Adapters   │  │   Agents    │  │   System    │              │
 │  └─────────────┘  └─────────────┘  └─────────────┘              │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐                               │
+│  │   KGraph    │  │ Supporting  │                               │
+│  │ (External)  │  │   Types     │                               │
+│  └─────────────┘  └─────────────┘                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Relationships
 
 - **ArchiNoteManager**: Central coordinator managing document operations and repository agents
-- **KGraph**: Knowledge graph implementation for semantic relationships between document elements
+- **KGraph** (External): Independent knowledge graph library for semantic relationships
 - **Storage Adapters**: Pluggable storage backends (HDF5, SQLite planned)
 - **Repository Agents**: Specialized agents for different document attribute types
 - **Attribute System**: Type-safe, structured representation of document content
+
+### External Dependencies
+
+ArchiNote integrates with the following external libraries:
+
+- **[KGraph](https://github.com/AlotfyDev/KGraph)**: Hierarchical knowledge graph system for semantic processing
 
 ## Installation
 
@@ -52,6 +63,7 @@ ArchiNote is a sophisticated C++ system designed to simulate the semantic struct
 - C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
 - CMake 3.15 or higher
 - HDF5 library (optional, for HDF5 storage adapter)
+- **[KGraph Library](https://github.com/AlotfyDev/KGraph)**: For knowledge graph integration
 
 ### Build Instructions
 
@@ -60,11 +72,22 @@ ArchiNote is a sophisticated C++ system designed to simulate the semantic struct
 git clone https://github.com/AlotfyDev/ArchiNote.git
 cd ArchiNote
 
-# Create build directory
+# Clone KGraph dependency (if not installed system-wide)
+git clone https://github.com/AlotfyDev/KGraph.git
+cd KGraph && mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build . --config Release
+cmake --install .  # Install system-wide
+cd ../../
+
+# Create ArchiNote build directory
 mkdir build && cd build
 
-# Configure with CMake
+# Configure with CMake (KGraph will be auto-detected if installed)
 cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Alternative: Specify KGraph path if not installed system-wide
+cmake .. -DCMAKE_BUILD_TYPE=Release -DKGraph_DIR=/path/to/KGraph/lib/cmake/KGraph
 
 # Build the project
 cmake --build . --config Release
@@ -78,6 +101,7 @@ ctest
 - **Standard Library**: Full C++17 support required
 - **HDF5** (optional): For HDF5StorageAdapter
 - **SQLite** (planned): For version control and relational storage
+- **KGraph** (external): Hierarchical knowledge graph system for semantic processing
 
 ## Usage
 
@@ -107,7 +131,7 @@ manager->addAttribute(ArchiNoteAttributeType::KEY_OBJECTIVES,
 ```cpp
 #include "KGraph/KGraph.hpp"
 
-// Initialize knowledge graph
+// Initialize knowledge graph (from external KGraph library)
 KGraph graph;
 graph.initializeGraph("archinote.db");
 
@@ -116,6 +140,9 @@ graph.ingestFromArchiNotes(yamlDocumentData);
 
 // Query semantic relationships
 auto relatedNodes = graph.getNeighbors("OBJ-001", EdgeRelationshipType::DEPENDS_ON);
+
+// Export for RAG systems
+std::string ragData = graph.exportToRAG(documentNodeIds);
 ```
 
 ### Version Control Operations
@@ -253,30 +280,35 @@ ArchiNote/
 │       ├── AttributeContentDataType.hpp
 │       ├── ObjectiveSubType.hpp
 │       └── RiskSubType.hpp
-├── KGraph/                           # Knowledge graph implementation
-│   ├── KGraph.cpp
-│   └── KGraph.hpp
+├── CMakeLists.txt                     # Build configuration
+├── README.md                          # This file
+└── .gitignore                         # Version control exclusions
+```
+
+### External Dependencies Structure
+
+**KGraph Library** (https://github.com/AlotfyDev/KGraph):
+```
+KGraph/
+├── KGraph/                           # Core KGraph implementation
+│   ├── KGraph.cpp                    # Main graph engine
+│   └── KGraph.hpp                    # KGraph class definition
 ├── SupportingTypes/                  # Supporting type definitions
-│   ├── EAttributeContentType.hpp
-│   ├── EAttributeType.hpp
-│   ├── EKGNodeType.hpp
-│   ├── EKGPathType.hpp
-│   ├── EKGRelation.hpp
-│   ├── GraphOrchestrator.cpp
-│   ├── GraphOrchestrator.hpp
-│   ├── KGBaseNode.cpp
-│   ├── KGBaseNode.hpp
-│   ├── KGEdge.cpp
-│   ├── KGEdge.hpp
-│   ├── KGPath.cpp
-│   ├── KGPath.hpp
-│   ├── KGStructuredAttribute.cpp
-│   ├── KGStructuredAttribute.hpp
-│   ├── NodePipelineManager.cpp
-│   ├── NodePipelineManager.hpp
-│   ├── Struture.md
-│   └── test_kgraph.o
-└── README.md                         # This file
+│   ├── KGBaseNode.cpp               # Base node implementation
+│   ├── KGBaseNode.hpp               # Base node interface
+│   ├── KGEdge.cpp                   # Edge implementation
+│   ├── KGEdge.hpp                   # Edge definitions
+│   ├── KGPath.cpp                   # Path implementation
+│   ├── KGPath.hpp                   # Path definitions
+│   ├── KGStructuredAttribute.cpp    # Structured attribute implementation
+│   ├── KGStructuredAttribute.hpp    # Structured attribute interface
+│   ├── GraphOrchestrator.cpp        # Graph orchestration utilities
+│   ├── GraphOrchestrator.hpp        # Graph orchestration interface
+│   ├── NodePipelineManager.cpp      # Node pipeline management
+│   ├── NodePipelineManager.hpp      # Node pipeline interface
+│   └── [Enum definitions]           # Type definitions
+├── CMakeLists.txt                    # KGraph build configuration
+└── README.md                         # KGraph documentation
 ```
 
 ## Document Attribute Types
@@ -298,12 +330,22 @@ The system supports various document attribute types for comprehensive project d
 
 ## Integration Capabilities
 
-### Knowledge Graph Integration
+### External KGraph Integration
 
-ArchiNote is designed to integrate with hierarchical knowledge graph systems:
+ArchiNote integrates with the external [KGraph](https://github.com/AlotfyDev/KGraph) library for knowledge graph functionality:
 
 ```cpp
-// Export document structure to knowledge graph
+// Include external KGraph library
+#include "KGraph/KGraph.hpp"
+
+// Initialize knowledge graph
+KGraph graph;
+graph.initializeGraph("archinote.db");
+
+// Ingest ArchiNote documents
+graph.ingestFromArchiNotes(yamlDocumentData);
+
+// Export for RAG systems
 std::string ragExport = graph.exportToRAG(documentNodeIds);
 
 // Query for document retrieval
